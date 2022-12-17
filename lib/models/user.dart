@@ -19,4 +19,9 @@ class User {
     phone: json["phone"],
     email: json["email"],
   );
+
+  @override
+  String toString(){
+    return 'User{id: $id, name: $name, phone: $phone, email: $email}';
+  }
 }

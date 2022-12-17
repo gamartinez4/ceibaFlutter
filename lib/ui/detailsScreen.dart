@@ -1,4 +1,5 @@
 // ignore: file_names
+import 'package:ceiba_flutter/models/dbModels/postDb.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/post.dart';
@@ -11,23 +12,9 @@ class DetailsScreen extends StatelessWidget{
   const DetailsScreen({Key? key}) : super(key: key);
 
   Future <List<Post>> fetchData(BuildContext context) async {
-    try{
-      final response = await http.get(Uri.parse("https://jsonplaceholder.typicode.com/posts"));
-      if (response.statusCode == 200) {
-        var listPosts = List<Post>.from(( List<Post>.from(json.decode(response.body).map((x) =>Post.fromJson(x))))
-          .where((i){
-              var userId = ModalRoute.of(context)!.settings.arguments;
-              return i.userId == userId;
-            })
-        );
-        return listPosts;
-      } else {
-        return [];
-      }
-    }catch(e){
-      print(e.toString());
+    //print(ModalRoute.of(context)!.settings.arguments! );
+    //  List<Post> postsDb = List<Post>.from(ModalRoute.of(context)!.settings.arguments.);
       return [];
-    }
   }
 
   @override
@@ -66,7 +53,7 @@ class DetailsScreen extends StatelessWidget{
                 return Text("${snapshot.error}");
               }
               // By default show a loading spinner.
-              return CircularProgressIndicator();
+              return const CircularProgressIndicator();
             },
           ),
         ),

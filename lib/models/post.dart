@@ -17,4 +17,9 @@ class Post{
     title: json["title"],
     body: json["body"],
   );
+
+  @override
+  String toString(){
+    return 'Post{userId: $userId, id: $id, title: $title, body: $body}';
+  }
 }

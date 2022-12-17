@@ -1,4 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:ceiba_flutter/ui/db/tableSelector.dart';
+import 'package:ceiba_flutter/ui/db/tableSelectorPost.dart';
+import 'package:ceiba_flutter/utils/sqlDb.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -6,45 +10,89 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:ceiba_flutter/utils/extension.dart';
 import 'package:http/http.dart' as http;
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import '../models/dbModels/postDb.dart';
+import '../models/dbModels/userDb.dart';
+import '../models/post.dart';
 import '../models/user.dart';
 import 'myScaffold.dart';
+
 
 final queryText = StateProvider<String>((ref) => "");
 
 
 class ListScreen extends HookConsumerWidget{
-  ListScreen({Key? key}) : super(key: key);
 
   var users = useState<List<User>>([]);
   var usersFiltered = useState<List<User>>([]);
 
-  int start = 0;
+  final templateDb = TableSelector();
+  final templateDbPosts = TableSelectorPosts();
   final RefreshController refreshController = RefreshController(initialRefresh: true);
 
-  Future<bool> getUsersData(WidgetRef ref,{bool isRefresh = false}) async {
-    if (isRefresh) {
-      start = 0;
-    } else {
-      if (start > 10) {
-        refreshController.loadNoData();
-        return false;
+  List<Post> posts = [];
+
+  ListScreen({Key? key}) : super(key: key){
+    getPosts();
+  }
+
+  Future<void> getPosts() async{
+    try{
+        final response = await http.get(Uri.parse("https://jsonplaceholder.typicode.com/posts"));
+        if (response.statusCode == 200) {
+        //  final resultPosts = List<Post>.from(json.decode(response.body).map( (x) => Post.fromJson(x) ));              SqlDb.setTemplate(templateDbPosts);
+          //if(Platform.isAndroid || Platform.isIOS){
+           // SqlDb.setTemplate(templateDbPosts);
+            //await SqlDb.insertAll(List<PostDb>.from( resultPosts.map((x) => x.toPostDb()) ));
+          }
+        
+        else{
+          print("respuesta incorrecta");
+        }
+      }catch(e){
+        print(e.toString());
       }
     }
 
-    final response = await http.get(
-      Uri.parse("https://jsonplaceholder.typicode.com/users?_start=$start&_limit=3")
-      );
-
-    if (response.statusCode == 200) {
-      final result = List<User>.from(json.decode(response.body).map((x ) => User.fromJson(x) ));
-      if (isRefresh) {
-        users.value = result;
-      }else{
-        users.value = users.value.addElement(result);
-        start=start+3;
+  Future<bool> getUsersData(WidgetRef ref,{bool isRefresh = false}) async {
+    if (isRefresh) {
+      users.value = [];
+    } else if (users.value.length > 20) {
+        refreshController.loadNoData();
+        return false;
+    }
+    try{
+     // int a = int.parse("dj");
+      final response = await http.get(
+        Uri.parse("https://jsonplaceholder.typicode.com/users?_start=${users.value.length}&_limit=3")
+        );
+      if (response.statusCode == 200) {
+        final resultUser = List<User>.from(json.decode(response.body).map( (x) => User.fromJson(x) ));
+        if (isRefresh) 
+          users.value = resultUser;
+        else 
+          users.value = users.value.addElement(resultUser);
+        if (Platform.isAndroid || Platform.isIOS){
+          SqlDb.setTemplate(templateDb);
+          await SqlDb.insertAll(List<UserDb>.from(resultUser.map((x) => x.toUserDb() )));
+          print(await SqlDb.dbFullQuery());
+          }
+        return true;
+      } 
+      return false;
+    }catch(e){
+      print(e.toString());
+      if (Platform.isAndroid || Platform.isIOS){
+        Iterable<UserDb> resultDb = [];
+        SqlDb.setTemplate(templateDb);
+        resultDb = List<UserDb>.from(( await SqlDb.dbFullQuery() )).where((j) => j.id>users.value.length && j.id<=users.value.length+3);
+        List<User> result = List<User>.from(resultDb.map((e) => e.toUser()));
+        if(result.isEmpty)return false;
+        if (isRefresh) 
+          users.value = result;
+        else 
+          users.value = users.value.addElement(result);
+        return true;
       }
-      return true;
-    } else {
       return false;
     }
   }
@@ -68,9 +116,8 @@ class ListScreen extends HookConsumerWidget{
       appBar: AppBar(
         backgroundColor: Color(0XFFFBFBFB),
         title: 
-            
-            TextField(
-              onChanged: (value) {
+          TextField(
+            onChanged: (value) {
               ref.read(queryText.notifier).state = value;
               if(value.isEmpty || value == ""){
                 usersFiltered.value = users.value;
@@ -80,29 +127,19 @@ class ListScreen extends HookConsumerWidget{
               }
             },
             decoration: const InputDecoration(icon:Icon(Icons.search))
-          ),
-        
+          ),      
       ),
       body: SmartRefresher(
         controller: refreshController,
         enablePullUp: true,
         onRefresh: () async {
-          final result = await getUsersData(ref,isRefresh: true);
-          if (result) {
-            refreshController.refreshCompleted();
-          } else {
-            refreshController.refreshFailed();
-          }
+          await getUsersData(ref, isRefresh: true)? 
+            refreshController.refreshCompleted(): refreshController.refreshFailed();
         },
         onLoading: () async {
-          final result = await getUsersData(ref);
-          if (result) {
-            refreshController.loadComplete();
-          } else {
-            refreshController.loadFailed();
-          }
+          await getUsersData(ref) ?
+            refreshController.loadComplete(): refreshController.loadFailed();
         },
-        //Navigator.pushNamed(context, "/details", arguments: user.id);
         child: ListView.separated(
           itemBuilder: (context, index) {
             final user = usersFiltered.value[index];
@@ -113,7 +150,17 @@ class ListScreen extends HookConsumerWidget{
                 padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
                 
                 child: GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, "/details", arguments: user.id),
+                 //     onTap: (){
+               //         SqlDb.setTemplate(templateDbPosts);
+                  //      SqlDb.dbFullQuery().then((value){ 
+                    //      print("ListaPosts:"+value.toString());
+                        //  Navigator.pushNamed(
+                          //  context, "/details", 
+                      //      arguments: (List<PostDb>.from(value)).where( (j) => j.userId==user.id ).map((i) => i.toPost())
+                            //);
+                          //}
+                   //     );
+                    //  },
                       child: Container(
                         height: 200,
                         decoration: BoxDecoration(
