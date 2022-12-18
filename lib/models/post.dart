@@ -20,6 +20,6 @@ class Post{
 
   @override
   String toString(){
-    return 'Post{userId: $userId, id: $id, title: $title, body: $body}';
+    return '{userId: $userId, id: $id, title: $title, body: $body}';
   }
 }

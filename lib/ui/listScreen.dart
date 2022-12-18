@@ -39,8 +39,7 @@ class ListScreen extends HookConsumerWidget{
         if (response.statusCode == 200){
           posts = List<Post>.from(json.decode(response.body).map( (x) => Post.fromJson(x) ));
           if(Platform.isAndroid || Platform.isIOS){
-            SqlDb.setTemplate(templateDbPosts);
-            await SqlDb.insertAll(List<PostDb>.from( posts.map((x) => x.toPostDb()) ));
+            await SqlDb.insertAll(List<PostDb>.from( posts.map((x) => x.toPostDb()) ),template: templateDbPosts);
           }
         }
         else{
@@ -70,8 +69,7 @@ class ListScreen extends HookConsumerWidget{
         else 
           users.value = users.value.addElement(resultUser);
         if (Platform.isAndroid || Platform.isIOS){
-          SqlDb.setTemplate(templateDb);
-          await SqlDb.insertAll(List<UserDb>.from(resultUser.map((x) => x.toUserDb() )));
+          await SqlDb.insertAll(List<UserDb>.from(resultUser.map((x) => x.toUserDb() )),template: templateDb);
         }
         getPosts();
         return true;
@@ -81,8 +79,7 @@ class ListScreen extends HookConsumerWidget{
       print(e.toString());
       if (Platform.isAndroid || Platform.isIOS){
         Iterable<UserDb> resultDb = [];
-        SqlDb.setTemplate(templateDb);
-        resultDb = List<UserDb>.from(( await SqlDb.dbFullQuery() )).where((j) => j.id>users.value.length && j.id<=users.value.length+3);
+        resultDb = List<UserDb>.from(( await SqlDb.dbFullQuery(template: templateDb) )).where((j) => j.id>users.value.length && j.id<=users.value.length+3);
         List<User> result = List<User>.from(resultDb.map((e) => e.toUser()));
         if(result.isEmpty)return false;
         if (isRefresh) 
@@ -150,8 +147,7 @@ class ListScreen extends HookConsumerWidget{
                 child: GestureDetector(
                       onTap: (){
                         if (Platform.isAndroid || Platform.isIOS){
-                          SqlDb.setTemplate(templateDbPosts);
-                          SqlDb.dbFullQuery().then((value){ 
+                          SqlDb.dbFullQuery(template: templateDbPosts).then((value){ 
                             Navigator.pushNamed(
                               context, "/details", 
                               arguments: List<Post>.from((List<PostDb>.from(value)).where( (j) => j.userId==user.id ).map((i) => i.toPost()))
@@ -189,7 +185,7 @@ class ListScreen extends HookConsumerWidget{
                                             children:[
                                               Text(
                                                 user.name,
-                                                style: TextStyle(fontSize: 18, color: Color(0Xff285e2f)),
+                                                style: const TextStyle(fontSize: 18, color: Color(0Xff285e2f)),
                                                 )
                                               ]
                                             ),

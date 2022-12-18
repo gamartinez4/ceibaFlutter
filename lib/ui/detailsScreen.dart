@@ -12,9 +12,8 @@ class DetailsScreen extends StatelessWidget{
   const DetailsScreen({Key? key}) : super(key: key);
 
   Future <List<Post>> fetchData(BuildContext context) async {
-    //print(ModalRoute.of(context)!.settings.arguments! );
-    //  List<Post> postsDb = List<Post>.from(ModalRoute.of(context)!.settings.arguments.);
-      return [];
+      
+      return ModalRoute.of(context)!.settings.arguments! as List<Post> ;
   }
 
   @override
@@ -33,9 +32,8 @@ class DetailsScreen extends StatelessWidget{
                     return 
                       Container(
                         alignment: Alignment.center,
-                        child: Text(data[index].body),
-                        height: 150,
-                        padding: const EdgeInsets.fromLTRB(20.0, 0, 0, 0),
+                        height:220,
+                        padding: const EdgeInsets.fromLTRB(30.0, 0, 30, 0),
                         decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(3),
                             color: Colors.white,
@@ -43,9 +41,22 @@ class DetailsScreen extends StatelessWidget{
                               BoxShadow(color: Colors.grey.withOpacity(0.5),
                                 spreadRadius: 2,
                                 blurRadius: 3,
-                                offset: Offset(0, 3)),
+                                offset: const Offset(0, 3)),
                               ],
                             )  ,
+                        child: 
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children:
+                            [
+                              Text(
+                                data[index].title,
+                                 style: const TextStyle(fontSize: 18, color: Color(0Xff285e2f))
+                                ),
+                              const SizedBox(height:15),
+                              Text(data[index].body)
+                              ]
+                            ),
                       );
                   }
                 );

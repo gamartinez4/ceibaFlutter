@@ -7,32 +7,26 @@ import '../models/dbModels/userDb.dart';
 
 class SqlDb{
 
-  static dynamic tableSelector;
-
-  static setTemplate(dynamic template){
-    tableSelector = template;
-  }
-
-  static Future<Database> _openDb() async{
+  static Future<Database> _openDb({dynamic template}) async{
     return openDatabase(
-      join(await getDatabasesPath(), tableSelector.dataBaseName()),
-      onCreate: (db, version) => db.execute(tableSelector.dataBaseCreateQuery()),
+      join(await getDatabasesPath(), template.dataBaseName()),
+      onCreate: (db, version) => db.execute(template.dataBaseCreateQuery()),
       version: 1
     );
   }
   
-  static Future<int> insert(dynamic object) async{
-    Database database = await _openDb();
-    return database.insert(tableSelector.dataBaseAlias(), object.toMap(),conflictAlgorithm: ConflictAlgorithm.replace,);
+  static Future<int> insert(dynamic object, {dynamic template}) async{
+    Database database = await _openDb(template: template);
+    return database.insert(template.dataBaseAlias(), object.toMap(),conflictAlgorithm: ConflictAlgorithm.replace,);
   }
 
-  static insertAll(List<dynamic> objects){
-    return objects.forEach((element) => insert(element));
+  static insertAll(List<dynamic> objects, {dynamic template}){
+    return objects.forEach((element) => insert(element, template: template));
   }
 
-  static Future<List<dynamic>> dbFullQuery() async {
-    Database database = await _openDb();
-    final List<Map<String,dynamic>> mapObject = await database.query(tableSelector.dataBaseAlias());
-    return List<dynamic>.generate(mapObject.length, (i) => tableSelector.constructor(mapObject[i]));
+  static Future<List<dynamic>> dbFullQuery( {dynamic template}) async {
+    Database database = await _openDb(template: template);
+    final List<Map<String,dynamic>> mapObject = await database.query(template.dataBaseAlias());
+    return List<dynamic>.generate(mapObject.length, (i) => template.constructor(mapObject[i]));
   }
 }
