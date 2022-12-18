@@ -31,25 +31,23 @@ class ListScreen extends HookConsumerWidget{
 
   List<Post> posts = [];
 
-  ListScreen({Key? key}) : super(key: key){
-    getPosts();
-  }
+  ListScreen({Key? key}) : super(key: key);
 
   Future<void> getPosts() async{
     try{
         final response = await http.get(Uri.parse("https://jsonplaceholder.typicode.com/posts"));
-        if (response.statusCode == 200) {
-        //  final resultPosts = List<Post>.from(json.decode(response.body).map( (x) => Post.fromJson(x) ));              SqlDb.setTemplate(templateDbPosts);
-          //if(Platform.isAndroid || Platform.isIOS){
-           // SqlDb.setTemplate(templateDbPosts);
-            //await SqlDb.insertAll(List<PostDb>.from( resultPosts.map((x) => x.toPostDb()) ));
+        if (response.statusCode == 200){
+          posts = List<Post>.from(json.decode(response.body).map( (x) => Post.fromJson(x) ));
+          if(Platform.isAndroid || Platform.isIOS){
+            SqlDb.setTemplate(templateDbPosts);
+            await SqlDb.insertAll(List<PostDb>.from( posts.map((x) => x.toPostDb()) ));
           }
-        
+        }
         else{
           print("respuesta incorrecta");
         }
       }catch(e){
-        print(e.toString());
+       print(e.toString());
       }
     }
 
@@ -74,8 +72,8 @@ class ListScreen extends HookConsumerWidget{
         if (Platform.isAndroid || Platform.isIOS){
           SqlDb.setTemplate(templateDb);
           await SqlDb.insertAll(List<UserDb>.from(resultUser.map((x) => x.toUserDb() )));
-          print(await SqlDb.dbFullQuery());
-          }
+        }
+        getPosts();
         return true;
       } 
       return false;
@@ -150,17 +148,23 @@ class ListScreen extends HookConsumerWidget{
                 padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
                 
                 child: GestureDetector(
-                 //     onTap: (){
-               //         SqlDb.setTemplate(templateDbPosts);
-                  //      SqlDb.dbFullQuery().then((value){ 
-                    //      print("ListaPosts:"+value.toString());
-                        //  Navigator.pushNamed(
-                          //  context, "/details", 
-                      //      arguments: (List<PostDb>.from(value)).where( (j) => j.userId==user.id ).map((i) => i.toPost())
-                            //);
-                          //}
-                   //     );
-                    //  },
+                      onTap: (){
+                        if (Platform.isAndroid || Platform.isIOS){
+                          SqlDb.setTemplate(templateDbPosts);
+                          SqlDb.dbFullQuery().then((value){ 
+                            Navigator.pushNamed(
+                              context, "/details", 
+                              arguments: List<Post>.from((List<PostDb>.from(value)).where( (j) => j.userId==user.id ).map((i) => i.toPost()))
+                              );
+                            }
+                          );
+                        }else{
+                          Navigator.pushNamed(
+                              context, "/details", 
+                              arguments: List<Post>.from( posts.where( (j) => j.userId==user.id ))
+                              );
+                        }
+                      },
                       child: Container(
                         height: 200,
                         decoration: BoxDecoration(
@@ -170,7 +174,7 @@ class ListScreen extends HookConsumerWidget{
                               BoxShadow(color: Colors.grey.withOpacity(0.5),
                                 spreadRadius: 2,
                                 blurRadius: 3,
-                                offset: Offset(0, 3)),
+                                offset: const Offset(0, 3)),
                               ],
                             )   ,
                             child: Scaffold(
