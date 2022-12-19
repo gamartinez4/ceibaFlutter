@@ -16,22 +16,22 @@ import '../models/post.dart';
 import '../models/user.dart';
 import 'myScaffold.dart';
 
+class ListScreen extends StatefulWidget {
+  @override
+  _ListScreenState createState() =>  _ListScreenState();
+}
 
-final queryText = StateProvider<String>((ref) => "");
+class _ListScreenState extends State<ListScreen> {
 
-
-class ListScreen extends HookConsumerWidget{
-
-  var users = useState<List<User>>([]);
-  var usersFiltered = useState<List<User>>([]);
+  String queryText = "";
+  List<User> users = [];
+  List<User> usersFiltered = [];
 
   final templateDb = TableSelector();
   final templateDbPosts = TableSelectorPosts();
   final RefreshController refreshController = RefreshController(initialRefresh: true);
 
   List<Post> posts = [];
-
-  ListScreen({Key? key}) : super(key: key);
 
   Future<void> getPosts() async{
     try{
@@ -50,28 +50,27 @@ class ListScreen extends HookConsumerWidget{
       }
     }
 
-  Future<bool> getUsersData(WidgetRef ref,{bool isRefresh = false}) async {
+  Future<bool> getUsersData({bool isRefresh = false}) async {
     if (isRefresh) {
-      users.value = [];
-    } else if (users.value.length > 20) {
+      users = [];
+    } else if (users.length > 20) {
         refreshController.loadNoData();
         return false;
     }
     try{
      // int a = int.parse("dj");
       final response = await http.get(
-        Uri.parse("https://jsonplaceholder.typicode.com/users?_start=${users.value.length}&_limit=3")
+        Uri.parse("https://jsonplaceholder.typicode.com/users?_start=${users.length}&_limit=3")
         );
       if (response.statusCode == 200) {
         final resultUser = List<User>.from(json.decode(response.body).map( (x) => User.fromJson(x) ));
-        if (isRefresh) 
-          users.value = resultUser;
-        else 
-          users.value = users.value.addElement(resultUser);
+        users = isRefresh? resultUser: users.addElement(resultUser);
+        usersFiltered = List<User>.from(users.where((element) => element.name.contains(queryText)));
         if (Platform.isAndroid || Platform.isIOS){
           await SqlDb.insertAll(List<UserDb>.from(resultUser.map((x) => x.toUserDb() )),template: templateDb);
         }
         getPosts();
+        setState(() {});
         return true;
       } 
       return false;
@@ -79,13 +78,12 @@ class ListScreen extends HookConsumerWidget{
       print(e.toString());
       if (Platform.isAndroid || Platform.isIOS){
         Iterable<UserDb> resultDb = [];
-        resultDb = List<UserDb>.from(( await SqlDb.dbFullQuery(template: templateDb) )).where((j) => j.id>users.value.length && j.id<=users.value.length+3);
+        resultDb = List<UserDb>.from(( await SqlDb.dbFullQuery(template: templateDb) )).where((j) => j.id>users.length && j.id<=users.length+3);
         List<User> result = List<User>.from(resultDb.map((e) => e.toUser()));
         if(result.isEmpty)return false;
-        if (isRefresh) 
-          users.value = result;
-        else 
-          users.value = users.value.addElement(result);
+        usersFiltered = List<User>.from(users.where((element) => element.name.contains(queryText)));
+        users = isRefresh? result: users.addElement(result);
+        setState(() {});
         return true;
       }
       return false;
@@ -94,17 +92,8 @@ class ListScreen extends HookConsumerWidget{
 
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
 
-    users.addListener;{
-      var value = ref.read(queryText);
-      if(value.isEmpty || value == ""){
-        usersFiltered.value = users.value;
-      }
-      else {
-        usersFiltered.value = List<User>.from(users.value.where((element) => element.name.contains(value)));
-      }
-    }
 
     return MyScaffold(
       body:Scaffold(
@@ -113,13 +102,10 @@ class ListScreen extends HookConsumerWidget{
         title: 
           TextField(
             onChanged: (value) {
-              ref.read(queryText.notifier).state = value;
-              if(value.isEmpty || value == ""){
-                usersFiltered.value = users.value;
-              }
-              else {
-                usersFiltered.value = List<User>.from(users.value.where((element) => element.name.contains(value)));
-              }
+              queryText = value;
+              usersFiltered = (value.isEmpty || value == "")? users: 
+                List<User>.from(users.where((element) => element.name.contains(value)));
+              setState(() {});
             },
             decoration: const InputDecoration(icon:Icon(Icons.search))
           ),      
@@ -128,16 +114,16 @@ class ListScreen extends HookConsumerWidget{
         controller: refreshController,
         enablePullUp: true,
         onRefresh: () async {
-          await getUsersData(ref, isRefresh: true)? 
+          await getUsersData(isRefresh: true)? 
             refreshController.refreshCompleted(): refreshController.refreshFailed();
         },
         onLoading: () async {
-          await getUsersData(ref) ?
+          await getUsersData() ?
             refreshController.loadComplete(): refreshController.loadFailed();
         },
         child: ListView.separated(
           itemBuilder: (context, index) {
-            final user = usersFiltered.value[index];
+            final user = usersFiltered[index];
             return 
             Container(
               child :Container(
@@ -223,7 +209,7 @@ class ListScreen extends HookConsumerWidget{
                
           },
           separatorBuilder: (context, index) => const SizedBox.shrink(),
-          itemCount: usersFiltered.value.length,
+          itemCount: usersFiltered.length,
         ),
       ),
     )
