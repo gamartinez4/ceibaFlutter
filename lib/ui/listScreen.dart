@@ -81,8 +81,8 @@ class _ListScreenState extends State<ListScreen> {
         resultDb = List<UserDb>.from(( await SqlDb.dbFullQuery(template: templateDb) )).where((j) => j.id>users.length && j.id<=users.length+3);
         List<User> result = List<User>.from(resultDb.map((e) => e.toUser()));
         if(result.isEmpty)return false;
-        usersFiltered = List<User>.from(users.where((element) => element.name.contains(queryText)));
         users = isRefresh? result: users.addElement(result);
+        usersFiltered = List<User>.from(users.where((element) => element.name.contains(queryText)));
         setState(() {});
         return true;
       }
