@@ -1,5 +1,5 @@
 import 'package:ceiba_flutter/models/user.dart';
-import 'package:ceiba_flutter/ui/db/tableSelector.dart';
+import 'package:ceiba_flutter/utils/db/tableSelector.dart';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';

@@ -20,16 +20,10 @@ class MyApp extends HookWidget {
     return
     MaterialApp(
       routes: {
-        "/details": (_)=> DetailsScreen(),
+        "/details": (_)=> const DetailsScreen(),
        },
       home: ListScreen(),
     );
   }
 }
-
-
-
-
-
-
 
