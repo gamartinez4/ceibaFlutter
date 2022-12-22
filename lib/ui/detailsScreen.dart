@@ -12,7 +12,6 @@ class DetailsScreen extends StatelessWidget{
   const DetailsScreen({Key? key}) : super(key: key);
 
   Future <List<Post>> fetchData(BuildContext context) async {
-      
       return ModalRoute.of(context)!.settings.arguments! as List<Post> ;
   }
 
