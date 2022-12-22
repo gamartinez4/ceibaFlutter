@@ -30,7 +30,6 @@ class ListScreenViewModel{
           if(Platform.isAndroid || Platform.isIOS){
             await SqlDb.insertAll(List<PostDb>.from( posts.map((x) => x.toPostDb()) ),template: getIt<TableSelectorPosts>());
           }
-          print("ejemplo"+posts.length.toString());
         }
         else{
           print("respuesta incorrecta");
@@ -65,7 +64,6 @@ class ListScreenViewModel{
         Uri.parse("https://jsonplaceholder.typicode.com/users?_start=${usersList.length}&_limit=3")
         );
       if (response.statusCode == 200) {
-        print("entro1");
         if (Platform.isAndroid || Platform.isIOS){
           final resultUser = List<User>.from(json.decode(response.body).map( (x) => User.fromJson(x) ));
           usersList = isRefresh? resultUser: usersList.addElement(resultUser);
